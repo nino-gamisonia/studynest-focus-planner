@@ -91,7 +91,7 @@ function Planner() {
                   <div key={s.id} className={`group rounded-lg p-2 text-xs ${subjectTone(s.subject)}`}>
                     <button onClick={() => setForm({ ...s, notes: s.notes ?? "" })} className="text-left w-full">
                       <div className="font-semibold opacity-70">{s.start}–{s.end}</div>
-                      <div className="font-medium text-sm leading-tight">{s.subject}</div>
+                      <div className="font-medium text-sm leading-tight break-words">{s.subject}</div>
                       {s.notes && <div className="opacity-75 mt-0.5">{s.notes}</div>}
                     </button>
                     <button aria-label="Delete session" onClick={() => setSessions((p) => p.filter((x) => x.id !== s.id))} className="mt-1 opacity-60 hover:opacity-100 hover:text-high inline-flex items-center gap-1"><Trash2 className="h-3 w-3" /> Remove</button>

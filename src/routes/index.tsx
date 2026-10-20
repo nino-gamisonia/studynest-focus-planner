@@ -57,7 +57,7 @@ function Dashboard() {
             <Link to="/tasks" className="text-sm text-muted-foreground hover:text-primary inline-flex items-center gap-1">All tasks <ArrowRight className="h-3.5 w-3.5" /></Link>
           </div>
           {overdue > 0 && <p className="text-sm text-high bg-high-soft rounded-lg px-3 py-2 mb-3">{overdue} task{overdue > 1 ? "s are" : " is"} overdue.</p>}
-          {upcoming.length === 0 ? (
+          {!tasks ? null : upcoming.length === 0 ? (
             <p className="text-muted-foreground text-sm py-6 text-center">Nothing pending — enjoy the calm.</p>
           ) : (
             <ul className="divide-y">
@@ -83,7 +83,7 @@ function Dashboard() {
               <h2 className="font-semibold text-lg">Today's study plan</h2>
               <Link to="/planner" className="text-sm text-muted-foreground hover:text-primary">Planner</Link>
             </div>
-            {todays.length === 0 ? (
+            {!sessions ? null : todays.length === 0 ? (
               <p className="text-muted-foreground text-sm">No sessions planned today. <Link to="/planner" className="text-primary underline">Add one</Link></p>
             ) : (
               <ul className="space-y-2.5">
