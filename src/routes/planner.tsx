@@ -43,7 +43,7 @@ function Planner() {
 
   const label = `${week.toLocaleDateString(undefined, { month: "short", day: "numeric" })} – ${addDays(week, 6).toLocaleDateString(undefined, { month: "short", day: "numeric" })}`;
   const weekTotal = (sessions ?? []).filter((s) => s.date >= toISO(week) && s.date <= toISO(addDays(week, 6)))
-    .reduce((m, s) => { const [a, b] = [s.start, s.end].map((t) => +t.slice(0, 2) * 60 + +t.slice(3)); return m + (b - a); }, 0);
+    .reduce((m, s) => { const [a, b] = [s.start, s.end].map((t) => +t.slice(0, 2) * 60 + +t.slice(3)); return m + ((b ?? 0) - (a ?? 0)); }, 0);
 
   return (
     <>

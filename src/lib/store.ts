@@ -16,7 +16,7 @@ export interface Session {
   date: string; // yyyy-mm-dd
   start: string; // HH:mm
   end: string;
-  notes?: string;
+  notes?: string | undefined;
 }
 
 export const toISO = (d: Date) => {
