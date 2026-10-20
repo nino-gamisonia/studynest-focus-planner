@@ -1,56 +1,40 @@
-# 🪹 StudyNest — Focus & Productivity Planner
+Build a responsive student productivity web app called StudyNest, with the tagline "Study smart. Stay on track."
 
-> **"Study smart. Stay on track."**
+The app should help university students organize assignments, deadlines, priorities, and study schedules.
 
-StudyNest არის თანამედროვე, სტუდენტებზე მორგებული ვებ-აპლიკაცია, რომელიც ეხმარება უნივერსიტეტის სტუდენტებს სასწავლო პროცესისა და დროის ეფექტურად მართვაში.
+Design: Modern, clean, calm, student-friendly interface. Use sage green (#A8BFA3), warm off-white (#F7F5EF), light blue (#DCE8F0), dark green (#34443B), and white. Use rounded cards, clear typography, subtle shadows, and a professional SaaS dashboard layout.
 
-🌐 **Live Demo:** [studynest-focus-planner.lovable.app](https://studynest-focus-planner.lovable.app)
+Main sections:
 
----
+Dashboard: Overview of upcoming deadlines, pending tasks, completed tasks, and today's study plan.
 
-## 🎯 რა პრობლემას აგვარებს აპლიკაცია?
+My Tasks: Add, edit, delete, and complete tasks. Each task should have a title, subject, due date, and priority (High, Medium, Low). Include filtering and sorting.
 
-სტუდენტები ხშირად აწყდებიან დროის არასწორი გადანაწილების, დედლაინების გამოტოვების, პროკრასტინაციისა და ფოკუსის დაკარგვის პრობლემას. StudyNest ამცირებს სასწავლო სტრესს და გაძლევთ საშუალებას ერთ სივრცეში ადევნოთ თვალი დავალებებს, დაგეგმოთ კვირა და გამოიყენოთ ფოკუსირების ტაიმერი.
+Study Planner: A weekly schedule where students can organize study sessions by subject and date.
 
----
+Focus Timer: A working Pomodoro timer with 25-minute focus sessions, 5-minute short breaks, and 15-minute long breaks.
 
-## ✨ ძირითადი ფუნქციები
+Make the interface interactive and functional, not just a static design. Save tasks and study sessions in localStorage so they remain after refreshing the page. Include realistic sample tasks to demonstrate the app, but allow users to manage their own tasks.
 
-* **📊 Dashboard (მთავარი პანელი):** ზოგადი მიმოხილვა მოახლოებული დედლაინების, მიმდინარე და დასრულებული დავალებების, ასევე დღევანდელი სასწავლო გეგმის შესახებ.
-* **✅ My Tasks (დავალებების მენეჯერი):** დავალებების დამატება, რედაქტირება, წაშლა და დასრულება. მოიცავს სორტირებასა და გაფილტვრას პრიორიტეტების (High, Medium, Low), საგნებისა და დედლაინების მიხედვით.
-* **📅 Study Planner (სასწავლო გეგმა):** ყოველკვირეული ინტერაქტიული განრიგი სასწავლო სესიების დასაგეგმად.
-* **⏱️ Focus Timer (Pomodoro ტაიმერი):** 25-წუთიანი სამუშაო სესიები, 5-წუთიანი მოკლე და 15-წუთიანი ხანგრძლივი შესვენებებით.
-* **💾 LocalStorage Integration:** ყველა მონაცემი ავტომატურად ინახება ბრაუზერში, რაც უზრუნველყოფს გვერდის დარეფრეშების შემდეგ მონაცემების შენარჩუნებას.
-* **📱 Responsive Design:** სრულად ადაპტირებულია როგორც დესკტოპზე, ასევე მობილურ მოწყობილობებზე.
+Use React, TypeScript, and Tailwind CSS. Ensure the website works on desktop and mobile. Prioritize usability, clear navigation, and a polished visual design. Do not add fake AI features or buttons that do nothing.
 
----
+This project was built with Lovable.
 
-## 🛠️ გამოყენებული ტექნოლოგიები
+Live app: https://studynest-focus-planner.lovable.app
 
-* **Core:** React, TypeScript, Vite
-* **Styling:** Tailwind CSS, Lucide Icons
-* **Platform:** Lovable
+Build with Lovable
 
----
+Continue developing this project in the Lovable editor.
 
-## 🎨 დიზაინის პალიტრა
+• Ship faster: describe what you want to build and Lovable handles the code.
+• Stay in sync: every change made in Lovable is committed straight to this repository.
+• Full ownership: this code is yours. Push to main on GitHub and your changes sync back into Lovable, ready for your next prompt.
 
-* **Sage Green:** `#A8BFA3`
-* **Warm Off-White:** `#F7F5EF`
-* **Light Blue:** `#DCE8F0`
-* **Dark Green:** `#34443B`
+Development
 
----
+Prefer working locally? You need Node.js and npm — install with nvm.
 
-## 📂 პროექტის სტრუქტურა
-
-```text
-studynest-focus-planner/
-├── public/          # სტატიკური ფაილები და აქტივები
-├── src/
-│   ├── components/  # UI კომპონენტები (Dashboard, Tasks, Timer, Planner)
-│   ├── hooks/       # Custom React Hooks
-│   ├── pages/       # აპლიკაციის მთავარი გვერდები
-│   └── types/       # TypeScript ტიპები და ინტერფეისები
-├── package.json     # პროექტის დამოკიდებულებები და სკრიპტები
-└── vite.config.ts   # Vite-ის კონფიგურაცია
+git clone <this-repository-url>
+cd <repository-name>
+npm i
+npm run dev
