@@ -171,6 +171,26 @@ export const timeMinutes = (time: string) => Number(time.slice(0,2)) * 60 + Numb
 export function sessionConflicts(candidate: Pick<Session, "date" | "start" | "end"> & { id?: string }, sessions: Session[]) {
   return sessions.filter(s => s.id !== candidate.id && s.date === candidate.date && timeMinutes(candidate.start) < timeMinutes(s.end) && timeMinutes(candidate.end) > timeMinutes(s.start));
 }
+export function sessionLayout(sessions: Session[]) {
+  const result: Record<string, { lane: number; lanes: number }> = {};
+  const sorted = [...sessions].sort((a,b) => a.start.localeCompare(b.start));
+  let group: Session[] = [], groupEnd = 0;
+  const placeGroup = () => {
+    const ends: number[] = [];
+    for (const session of group) {
+      let lane = ends.findIndex(end => end <= timeMinutes(session.start));
+      if (lane < 0) lane = ends.length;
+      ends[lane] = timeMinutes(session.end);
+      result[session.id] = { lane, lanes: 0 };
+    }
+    for (const session of group) { const item = result[session.id]; if (item) item.lanes = ends.length; }
+  };
+  for (const session of sorted) {
+    if (group.length && timeMinutes(session.start) >= groupEnd) { placeGroup(); group = []; groupEnd = 0; }
+    group.push(session); groupEnd = Math.max(groupEnd, timeMinutes(session.end));
+  }
+  placeGroup(); return result;
+}
 export function resetStudyNest() {
   for (const key of ["studynest.tasks", "studynest.sessions"]) localStorage.setItem(key, "[]");
   localStorage.setItem("studynest.preferences", JSON.stringify(defaultPreferences()));

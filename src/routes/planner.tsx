@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight, Plus, Trash2, X, AlertTriangle } from "lucid
 import { PageHeader } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { addDays, subjectClass, toISO, uid, useSessions, useTasks, usePreferences, startOfWeek, timeMinutes, sessionConflicts, type CalendarView, type Session } from "@/lib/store";
+import { addDays, subjectClass, toISO, uid, useSessions, useTasks, usePreferences, startOfWeek, timeMinutes, sessionConflicts, sessionLayout, type CalendarView, type Session } from "@/lib/store";
 
 export const Route = createFileRoute("/planner")({ head: () => ({ meta: [
   { title: "Study Planner — StudyNest" }, { name: "description", content: "Organize study sessions in a personalized day or week calendar with overlap warnings." },
@@ -33,7 +33,7 @@ function Planner() {
   const hours = Array.from({ length: endHour - startHour }, (_,i) => startHour+i);
   const subjects = [...new Set([...(tasks ?? []).map(t => t.subject), ...(sessions ?? []).map(s => s.subject), ...Object.keys(preferences?.subjectColors ?? {})])].sort();
   const conflicts = form ? sessionConflicts(form, sessions ?? []) : [];
-  const open = (day: string, hour = 10) => { setWarning(false); setForm({ subject: "", date: day, start: `${String(hour).padStart(2,"0")}:00`, end: `${String(Math.min(hour+1,23)).padStart(2,"0")}:00`, notes: "" }); };
+  const open = (day: string, hour = 10) => { setWarning(false); setForm({ subject: "", date: day, start: `${String(hour).padStart(2,"0")}:00`, end: hour === 23 ? "23:59" : `${String(hour+1).padStart(2,"0")}:00`, notes: "" }); };
   const edit = (session: Session) => { setWarning(false); setForm({ ...session, notes: session.notes ?? "" }); };
   const save = (allowOverlap = false) => {
     if (!form || !form.subject.trim() || !form.date || form.end <= form.start) return;
@@ -75,7 +75,7 @@ function Planner() {
           <div>{hours.map(h => <div key={h} className="calendar-hour text-[11px] text-muted-foreground text-center pt-1">{String(h).padStart(2,"0")}:00</div>)}</div>
           {days.map(d => { const iso = toISO(d); const list = visible.filter(s => s.date === iso).sort((a,b) => a.start.localeCompare(b.start)); return <div key={iso} className={`relative border-l ${iso === today ? "bg-accent/10" : ""}`}>
             {hours.map(h => <Button key={h} variant="ghost" aria-label={`Add session ${iso} ${h}:00`} className="calendar-hour w-full block rounded-none p-0 hover:bg-accent/30" onClick={() => open(iso,h)} />)}
-            {list.map(s => { const overlapping = list.filter(x => timeMinutes(x.start) < timeMinutes(s.end) && timeMinutes(x.end) > timeMinutes(s.start)); const lane = overlapping.findIndex(x => x.id === s.id); const lanes = overlapping.length; return <Button key={s.id} variant="ghost" title={`${s.subject} ${s.start}–${s.end}${s.notes ? ` · ${s.notes}` : ""}`} aria-label={`Edit ${s.subject} ${s.start}–${s.end}`} className={`calendar-block block whitespace-normal ${subjectClass(s.subject,preferences)}`} style={{ top:(timeMinutes(s.start)-startHour*60)/60*64, height:Math.max(24,(timeMinutes(s.end)-timeMinutes(s.start))/60*64-2), left:`calc(${lane/lanes*100}% + 2px)`, width:`calc(${100/lanes}% - 4px)` }} onClick={() => edit(s)}><div className="text-[10px] font-semibold leading-3">{s.start}–{s.end}</div><div className="font-semibold break-words leading-4 mt-1">{s.subject}</div>{s.notes && mode === "day" && <div className="text-xs font-normal break-words mt-1">{s.notes}</div>}</Button>; })}
+            {list.map(s => { const { lane, lanes } = sessionLayout(list)[s.id] ?? { lane: 0, lanes: 1 }; return <Button key={s.id} variant="ghost" title={`${s.subject} ${s.start}–${s.end}${s.notes ? ` · ${s.notes}` : ""}`} aria-label={`Edit ${s.subject} ${s.start}–${s.end}`} className={`calendar-block block whitespace-normal ${subjectClass(s.subject,preferences)}`} style={{ top:(timeMinutes(s.start)-startHour*60)/60*64, height:Math.max(24,(timeMinutes(s.end)-timeMinutes(s.start))/60*64-2), left:`calc(${lane/lanes*100}% + 2px)`, width:`calc(${100/lanes}% - 4px)` }} onClick={() => edit(s)}><div className="text-[10px] font-semibold leading-3">{s.start}–{s.end}</div><div className="font-semibold break-words leading-4 mt-1">{s.subject}</div>{s.notes && mode === "day" && <div className="text-xs font-normal break-words mt-1">{s.notes}</div>}</Button>; })}
           </div>; })}
         </div>
       </div>

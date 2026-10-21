@@ -71,10 +71,10 @@ function TasksPage() {
         <form onSubmit={save} className="card-soft p-5 mb-6 grid gap-3 md:grid-cols-12 items-end">
           <div className="md:col-span-12 flex justify-between items-center">
             <h2 className="font-semibold">{editing === "new" ? "Add a task" : "Edit task"}</h2>
-            <Button type="button" aria-label="Close" onClick={() => setEditing(null)} className="text-muted-foreground hover:text-primary"><X className="h-4 w-4" /></Button>
+            <Button type="button" variant="ghost" size="icon" title="Close task form" aria-label="Close" onClick={() => setEditing(null)} className="text-muted-foreground hover:text-primary"><X className="h-4 w-4" /></Button>
           </div>
-          <label className="md:col-span-4 text-sm">Title<input required autoFocus className="field mt-1" value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })} placeholder="e.g. Chapter 3 summary" /></label>
-          <label className="md:col-span-3 text-sm">Subject<input required list="subjects" className="field mt-1" value={draft.subject} onChange={(e) => setDraft({ ...draft, subject: e.target.value })} placeholder="e.g. History" /></label>
+          <label className="md:col-span-4 text-sm">Title<input required maxLength={200} autoFocus className="field mt-1" value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })} placeholder="e.g. Chapter 3 summary" /></label>
+          <label className="md:col-span-3 text-sm">Subject<input required maxLength={80} list="subjects" className="field mt-1" value={draft.subject} onChange={(e) => setDraft({ ...draft, subject: e.target.value })} placeholder="e.g. History" /></label>
           <datalist id="subjects">{subjects.map((s) => <option key={s} value={s} />)}</datalist>
           <label className="md:col-span-2 text-sm">Due date<input required type="date" className="field mt-1" value={draft.dueDate} onChange={(e) => setDraft({ ...draft, dueDate: e.target.value })} /></label>
           <label className="md:col-span-2 text-sm">Priority
@@ -104,11 +104,11 @@ function TasksPage() {
       <ul className="space-y-2.5">
         {tasks && list.length === 0 && <li className="card-soft p-8 text-center text-muted-foreground">No tasks match your filters.</li>}
         {list.map((t) => (
-          <li key={t.id} className={`card-soft p-4 flex items-center gap-3 ${t.completed ? "opacity-60" : ""}`}>
+          <li key={t.id} className={`card-soft p-3 sm:p-4 flex items-center gap-2 sm:gap-3 ${t.completed ? "opacity-60" : ""}`}>
             <input type="checkbox" checked={t.completed} aria-label={`Complete ${t.title}`} className="h-5 w-5 accent-primary shrink-0"
               onChange={() => { setTasks((p) => p.map((x) => (x.id === t.id ? toggleTask(x) : x))); toast.success(t.completed ? "Task marked pending" : "Task completed"); }} />
             <div className="flex-1 min-w-0">
-              <div className={`font-medium ${t.completed ? "line-through" : ""}`}>{t.title}</div>
+              <div className={`font-medium break-words ${t.completed ? "line-through" : ""}`}>{t.title}</div>
               <div className="text-xs text-muted-foreground flex flex-wrap gap-x-3">
                 <span className={`px-2 py-0.5 rounded-md ${subjectClass(t.subject, preferences)}`}>{t.subject}</span>
                 <span className={!t.completed && preferences?.deadlineWarnings && t.dueDate < today ? "text-high font-semibold" : ""}>Due {formatDue(t.dueDate)}{!t.completed && preferences?.deadlineWarnings && t.dueDate < today ? " · overdue" : ""}</span>

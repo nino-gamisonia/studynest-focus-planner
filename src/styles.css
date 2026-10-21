@@ -132,4 +132,8 @@
 .calendar-hour { border-top: 1px solid var(--border); height: 64px; }
 .calendar-block { position: absolute; border-left: 3px solid currentColor; border-radius: 6px; overflow: hidden; padding: 4px 6px; font-size: 11px; text-align: left; min-height: 24px; }
 .calendar-block:hover { filter: brightness(0.97); }
+progress { appearance: none; background: var(--muted); border: 0; border-radius: 6px; overflow: hidden; }
+progress::-webkit-progress-bar { background: var(--muted); }
+progress::-webkit-progress-value { background: var(--primary); }
+progress::-moz-progress-bar { background: var(--primary); }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; } }
