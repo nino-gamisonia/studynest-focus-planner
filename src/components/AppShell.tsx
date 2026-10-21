@@ -1,18 +1,24 @@
 import { Link } from "@tanstack/react-router";
-import { LayoutDashboard, ListChecks, CalendarDays, Timer, Feather } from "lucide-react";
-import type { ReactNode } from "react";
+import { LayoutDashboard, ListChecks, CalendarDays, Timer, Feather, UserRound, Settings, Info } from "lucide-react";
+import { useState, type ReactNode } from "react";
+import { Button } from "@/components/ui/button";
+import { Toaster } from "@/components/ui/sonner";
 
 const NAV = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
   { to: "/tasks", label: "My Tasks", icon: ListChecks },
   { to: "/planner", label: "Study Planner", icon: CalendarDays },
   { to: "/timer", label: "Focus Timer", icon: Timer },
+  { to: "/profile", label: "Profile", icon: UserRound },
+  { to: "/settings", label: "Settings", icon: Settings },
+  { to: "/about", label: "About Us", icon: Info },
 ] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {
+  const [menuOpen, setMenuOpen] = useState(false);
   return (
     <div className="min-h-screen md:flex">
-      <aside className="hidden md:flex w-64 shrink-0 flex-col bg-primary text-primary-foreground p-6 sticky top-0 h-screen">
+      <aside className="hidden md:flex w-56 lg:w-64 shrink-0 flex-col bg-primary text-primary-foreground p-6 sticky top-0 h-screen">
         <div className="flex items-center gap-2.5 mb-10">
           <div className="h-10 w-10 rounded-xl bg-sage text-primary grid place-items-center"><Feather className="h-5 w-5" /></div>
           <div>
@@ -29,18 +35,21 @@ export function AppShell({ children }: { children: ReactNode }) {
             </Link>
           ))}
         </nav>
-        <div className="mt-auto text-xs opacity-60">Your data is saved in this browser.</div>
+        <div className="mt-auto text-xs opacity-60 mt-6">Your data is saved in this browser.</div>
       </aside>
 
       <header className="md:hidden sticky top-0 z-20 bg-background/90 backdrop-blur border-b px-4 py-3 flex items-center gap-2">
         <div className="h-8 w-8 rounded-lg bg-primary text-primary-foreground grid place-items-center"><Feather className="h-4 w-4" /></div>
-        <span className="font-display text-lg font-semibold">StudyNest</span>
+        <span className="font-display text-lg font-semibold flex-1">StudyNest</span>
+        <Button variant="ghost" size="icon" aria-label="More pages" aria-expanded={menuOpen} onClick={() => setMenuOpen(!menuOpen)}><UserRound /></Button>
+        {menuOpen && <nav className="absolute top-full right-3 bg-card border shadow-soft rounded-lg p-2 flex flex-col min-w-40">{NAV.slice(4).map(({to,label,icon:Icon}) => <Link to={to} key={to} className="flex items-center gap-2 p-3 text-sm" onClick={() => setMenuOpen(false)}><Icon className="w-4 h-4" />{label}</Link>)}</nav>}
       </header>
 
       <main className="flex-1 min-w-0 px-4 py-6 md:px-10 md:py-10 pb-24 md:pb-10 max-w-6xl">{children}</main>
 
+      <Toaster richColors position="top-right" />
       <nav className="md:hidden fixed bottom-0 inset-x-0 z-20 bg-card border-t grid grid-cols-4">
-        {NAV.map(({ to, label, icon: Icon }) => (
+        {NAV.slice(0,4).map(({ to, label, icon: Icon }) => (
           <Link key={to} to={to} activeOptions={{ exact: true }}
             className="flex flex-col items-center gap-1 py-2.5 text-[11px] text-muted-foreground"
             activeProps={{ className: "!text-primary font-semibold" }}>
@@ -55,8 +64,8 @@ export function AppShell({ children }: { children: ReactNode }) {
 export function PageHeader({ title, subtitle, action }: { title: string; subtitle?: string; action?: ReactNode }) {
   return (
     <div className="flex flex-wrap items-end justify-between gap-4 mb-8">
-      <div>
-        <h1 className="font-display text-3xl md:text-4xl font-semibold text-primary">{title}</h1>
+      <div className="min-w-0 max-w-full">
+        <h1 className="font-display text-3xl md:text-4xl font-semibold text-primary break-words">{title}</h1>
         {subtitle && <p className="text-muted-foreground mt-1.5">{subtitle}</p>}
       </div>
       {action}
