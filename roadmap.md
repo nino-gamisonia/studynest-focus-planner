@@ -4,3 +4,4 @@
 - [x] Timed calendar with day/week navigation and conflict validation
 - [x] Profile, settings, about and accessible navigation
 - [x] Preserve task operations and timer; verify important flows
+- [x] Sidebar: study tools on top, Profile/Settings/About Us pinned below a divider
