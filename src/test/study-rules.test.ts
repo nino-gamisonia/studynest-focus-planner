@@ -39,8 +39,8 @@ describe("Study session conflicts", () => {
   });
   it("keeps chained overlapping sessions in separate lanes", () => {
     const layout = sessionLayout([{ ...session, id: "a", start: "09:00", end: "11:00" }, { ...session, id: "b", start: "10:00", end: "12:00" }, { ...session, id: "c", start: "11:00", end: "13:00" }]);
-    expect(layout.a).toEqual({ lane: 0, lanes: 2 });
-    expect(layout.b).toEqual({ lane: 1, lanes: 2 });
-    expect(layout.c).toEqual({ lane: 0, lanes: 2 });
+    expect(layout['a']).toEqual({ lane: 0, lanes: 2 });
+    expect(layout['b']).toEqual({ lane: 1, lanes: 2 });
+    expect(layout['c']).toEqual({ lane: 0, lanes: 2 });
   });
 });
