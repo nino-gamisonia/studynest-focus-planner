@@ -10,7 +10,7 @@ export interface Task {
   priority: Priority;
   completed: boolean;
   createdAt: number;
-  completedAt?: number;
+  completedAt?: number | undefined;
 }
 export interface Session {
   id: string;

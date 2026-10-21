@@ -8,11 +8,12 @@ describe("StudyNest task rules", () => {
     expect(dashboardData(tasks, new Date("2026-10-21T12:00:00")).priorities.map(t => t.id)).toEqual(["early", "later", "medium"]);
   });
   it("updates weekly progress when a task is completed and undone", () => {
-    const tasks = [task("a", "High", "2026-10-21"), task("b", "Low", "2026-10-22")];
+    const first = task("a", "High", "2026-10-21");
+    const second = task("b", "Low", "2026-10-22");
     const now = new Date("2026-10-21T12:00:00");
-    const completed = toggleTask(tasks[0], now.getTime());
-    expect(dashboardData([completed, tasks[1]], now).weeklyPercent).toBe(50);
-    expect(dashboardData([toggleTask(completed), tasks[1]], now).weeklyPercent).toBe(0);
+    const completed = toggleTask(first, now.getTime());
+    expect(dashboardData([completed, second], now).weeklyPercent).toBe(50);
+    expect(dashboardData([toggleTask(completed), second], now).weeklyPercent).toBe(0);
   });
   it("does not invent completion dates for legacy completed tasks", () => {
     expect(dashboardData([{ ...task("old", "Low", "2026-10-21"), completed: true }], new Date("2026-10-21T12:00:00")).completedThisWeek).toBe(0);
@@ -24,10 +25,11 @@ describe("StudyNest task rules", () => {
   });
 });
 describe("Study session conflicts", () => {
-  const existing = [{ id: "one", subject: "Math", date: "2026-10-21", start: "10:00", end: "11:00" }];
+  const session = { id: "one", subject: "Math", date: "2026-10-21", start: "10:00", end: "11:00" };
+  const existing = [session];
   it("identifies conflicting sessions and excludes the session being edited", () => {
     expect(sessionConflicts({ date: "2026-10-21", start: "10:30", end: "12:00" }, existing).map(s => s.id)).toEqual(["one"]);
-    expect(sessionConflicts({ ...existing[0] }, existing)).toEqual([]);
+    expect(sessionConflicts(session, existing)).toEqual([]);
   });
   it("does not treat sessions on different days as overlapping", () => {
     expect(sessionConflicts({ date: "2026-10-22", start: "10:30", end: "12:00" }, existing)).toEqual([]);
