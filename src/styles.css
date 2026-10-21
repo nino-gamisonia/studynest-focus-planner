@@ -114,3 +114,26 @@
   cursor: pointer;
   &:disabled { opacity: 0.5; cursor: not-allowed; }
 }
+
+:root {
+  --subject-sage: oklch(0.91 0.035 140); --subject-sage-ink: oklch(0.33 0.05 140);
+  --subject-blue: oklch(0.92 0.025 235); --subject-blue-ink: oklch(0.34 0.075 235);
+  --subject-gold: oklch(0.95 0.045 85); --subject-gold-ink: oklch(0.38 0.065 70);
+  --subject-rose: oklch(0.94 0.035 20); --subject-rose-ink: oklch(0.38 0.085 20);
+  --subject-teal: oklch(0.92 0.04 185); --subject-teal-ink: oklch(0.34 0.065 185);
+  --subject-lavender: oklch(0.93 0.03 300); --subject-lavender-ink: oklch(0.37 0.07 300);
+}
+.subject-sage { background: var(--subject-sage); color: var(--subject-sage-ink); }
+.subject-blue { background: var(--subject-blue); color: var(--subject-blue-ink); }
+.subject-gold { background: var(--subject-gold); color: var(--subject-gold-ink); }
+.subject-rose { background: var(--subject-rose); color: var(--subject-rose-ink); }
+.subject-teal { background: var(--subject-teal); color: var(--subject-teal-ink); }
+.subject-lavender { background: var(--subject-lavender); color: var(--subject-lavender-ink); }
+.calendar-hour { border-top: 1px solid var(--border); height: 64px; }
+.calendar-block { position: absolute; border-left: 3px solid currentColor; border-radius: 6px; overflow: hidden; padding: 4px 6px; font-size: 11px; text-align: left; min-height: 24px; }
+.calendar-block:hover { filter: brightness(0.97); }
+progress { appearance: none; background: var(--muted); border: 0; border-radius: 6px; overflow: hidden; }
+progress::-webkit-progress-bar { background: var(--muted); }
+progress::-webkit-progress-value { background: var(--primary); }
+progress::-moz-progress-bar { background: var(--primary); }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; } }

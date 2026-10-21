@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { Pause, Play, RotateCcw, SkipForward } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { usePreferences } from "@/lib/store";
 import { PageHeader } from "@/components/AppShell";
 
 export const Route = createFileRoute("/timer")({
@@ -10,6 +12,7 @@ export const Route = createFileRoute("/timer")({
       { name: "description", content: "Pomodoro focus timer with 25-minute sessions and short and long breaks." },
       { property: "og:title", content: "Focus Timer — StudyNest" },
       { property: "og:description", content: "Stay focused with a Pomodoro timer." },
+      { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: TimerPage,
@@ -31,15 +34,20 @@ function beep() {
 }
 
 function TimerPage() {
+  const [preferences] = usePreferences();
+  const focusDuration = (preferences?.focusMinutes ?? 25) * 60;
+  const durations: Record<Mode, number> = { ...DUR, focus: focusDuration };
   const [mode, setMode] = useState<Mode>("focus");
   const [left, setLeft] = useState(DUR.focus);
   const [running, setRunning] = useState(false);
   const [completed, setCompleted] = useState(0);
   const endAt = useRef(0);
 
-  const switchTo = (m: Mode) => { setMode(m); setLeft(DUR[m]); setRunning(false); };
+  useEffect(() => { if (mode === "focus" && !running) setLeft(focusDuration); }, [focusDuration]);
+
+  const switchTo = (m: Mode) => { setMode(m); setLeft(durations[m]); setRunning(false); };
   const finish = () => {
-    beep();
+    if (preferences?.timerSound !== false) beep();
     if (mode === "focus") {
       const n = completed + 1;
       setCompleted(n);
@@ -64,19 +72,19 @@ function TimerPage() {
   const ss = String(left % 60).padStart(2, "0");
   useEffect(() => { document.title = running ? `${mm}:${ss} · ${LABEL[mode]} — StudyNest` : "Focus Timer — StudyNest"; }, [mm, ss, running, mode]);
 
-  const progress = 1 - left / DUR[mode];
+  const progress = 1 - left / durations[mode];
   const R = 120, C = 2 * Math.PI * R;
 
   return (
     <>
-      <PageHeader title="Focus Timer" subtitle="25 minutes of focus, then a break. Every 4th break is a long one." />
+      <PageHeader title="Focus Timer" subtitle={`${focusDuration / 60} minutes of focus · short and long breaks`} />
       <div className="card-soft p-6 md:p-10 max-w-xl mx-auto flex flex-col items-center">
         <div className="flex gap-1 p-1 rounded-xl bg-muted mb-8">
           {(Object.keys(DUR) as Mode[]).map((m) => (
-            <button key={m} onClick={() => switchTo(m)}
+            <Button variant="ghost" aria-pressed={mode === m} key={m} onClick={() => switchTo(m)}
               className={`px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition ${mode === m ? "bg-card shadow-soft text-primary" : "text-muted-foreground hover:text-primary"}`}>
               {LABEL[m]}
-            </button>
+            </Button>
           ))}
         </div>
         <div className="relative w-64 h-64 sm:w-72 sm:h-72">
@@ -93,11 +101,11 @@ function TimerPage() {
           </div>
         </div>
         <div className="flex gap-3 mt-8">
-          <button aria-label="Reset" onClick={() => { setRunning(false); setLeft(DUR[mode]); }} className="btn bg-muted hover:bg-accent"><RotateCcw className="h-4 w-4" /></button>
-          <button onClick={() => setRunning(!running)} className="btn bg-primary text-primary-foreground hover:opacity-90 px-8 py-3 text-base">
-            {running ? <><Pause className="h-5 w-5" /> Pause</> : <><Play className="h-5 w-5" /> {left === DUR[mode] ? "Start" : "Resume"}</>}
-          </button>
-          <button aria-label="Skip" onClick={finish} className="btn bg-muted hover:bg-accent"><SkipForward className="h-4 w-4" /></button>
+          <Button variant="secondary" size="icon" title="Reset timer" aria-label="Reset" onClick={() => { setRunning(false); setLeft(durations[mode]); }} className="btn bg-muted hover:bg-accent"><RotateCcw className="h-4 w-4" /></Button>
+          <Button onClick={() => setRunning(!running)} className="btn bg-primary text-primary-foreground hover:opacity-90 px-8 py-3 text-base">
+            {running ? <><Pause className="h-5 w-5" /> Pause</> : <><Play className="h-5 w-5" /> {left === durations[mode] ? "Start" : "Resume"}</>}
+          </Button>
+          <Button variant="secondary" size="icon" title="Skip to next session" aria-label="Skip" onClick={finish} className="btn bg-muted hover:bg-accent"><SkipForward className="h-4 w-4" /></Button>
         </div>
         <div className="mt-8 flex items-center gap-2 text-sm text-muted-foreground">
           <span>Focus sessions completed:</span>

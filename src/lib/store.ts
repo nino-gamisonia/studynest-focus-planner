@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { toast } from "sonner";
 
 export type Priority = "High" | "Medium" | "Low";
 export interface Task {
@@ -9,6 +10,7 @@ export interface Task {
   priority: Priority;
   completed: boolean;
   createdAt: number;
+  completedAt?: number | undefined;
 }
 export interface Session {
   id: string;
@@ -67,25 +69,30 @@ function useStored<T>(key: string, seed: () => T) {
   const [value, setValue] = useState<T | null>(null);
   useEffect(() => {
     const load = () => {
-      const raw = localStorage.getItem(key);
+      let raw: string | null;
+      try { raw = localStorage.getItem(key); } catch { setValue(seed()); toast.error("Browser storage is unavailable. Changes cannot be saved."); return; }
       if (raw) {
         try { setValue(JSON.parse(raw)); return; } catch { /* reseed */ }
       }
       const s = seed();
-      localStorage.setItem(key, JSON.stringify(s));
+      try { localStorage.setItem(key, JSON.stringify(s)); } catch { toast.error("Your browser could not save this data."); }
       setValue(s);
     };
     load();
     const onEvt = (e: Event) => { if ((e as CustomEvent).detail === key) load(); };
+    const onStorage = (e: StorageEvent) => { if (e.key === key || e.key === null) load(); };
     window.addEventListener(EVT, onEvt);
-    return () => window.removeEventListener(EVT, onEvt);
+    window.addEventListener("storage", onStorage);
+    return () => { window.removeEventListener(EVT, onEvt); window.removeEventListener("storage", onStorage); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
   const update = useCallback((fn: (prev: T) => T) => {
-    const raw = localStorage.getItem(key);
-    const prev = raw ? (JSON.parse(raw) as T) : seed();
-    localStorage.setItem(key, JSON.stringify(fn(prev)));
-    window.dispatchEvent(new CustomEvent(EVT, { detail: key }));
+    try {
+      const raw = localStorage.getItem(key);
+      const prev = raw ? (JSON.parse(raw) as T) : seed();
+      localStorage.setItem(key, JSON.stringify(fn(prev)));
+      window.dispatchEvent(new CustomEvent(EVT, { detail: key }));
+    } catch { toast.error("Changes could not be saved. Check browser storage and try again."); throw new Error("Storage unavailable"); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
   return [value, update] as const;
@@ -112,3 +119,80 @@ export const formatDue = (iso: string) => {
   if (iso === tomorrow) return "Tomorrow";
   return new Date(iso + "T00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" });
 };
+
+export type CalendarView = "day" | "week";
+export interface Preferences {
+  displayName: string;
+  introduction: string;
+  weeklyTaskGoal: number;
+  weeklyStudyGoal: number;
+  calendarView: CalendarView;
+  focusMinutes: number;
+  timerSound: boolean;
+  deadlineWarnings: boolean;
+  subjectColors: Record<string, string>;
+}
+export const defaultPreferences = (): Preferences => ({ displayName: "Student", introduction: "", weeklyTaskGoal: 5, weeklyStudyGoal: 10, calendarView: "week", focusMinutes: 25, timerSound: true, deadlineWarnings: true, subjectColors: {} });
+export function usePreferences() {
+  const [stored, update] = useStored<Preferences>("studynest.preferences", defaultPreferences);
+  return [stored ? { ...defaultPreferences(), ...stored } : null, update] as const;
+}
+export const SUBJECT_COLORS = [
+  { id: "sage", name: "Sage", className: "subject-sage" },
+  { id: "blue", name: "Blue", className: "subject-blue" },
+  { id: "gold", name: "Gold", className: "subject-gold" },
+  { id: "rose", name: "Rose", className: "subject-rose" },
+  { id: "teal", name: "Teal", className: "subject-teal" },
+  { id: "lavender", name: "Lavender", className: "subject-lavender" },
+];
+export function subjectClass(subject: string, preferences: Preferences | null) {
+  let hash = 0;
+  for (const c of subject) hash = (hash * 31 + c.charCodeAt(0)) >>> 0;
+  return (SUBJECT_COLORS.find(c => c.id === preferences?.subjectColors[subject]) ?? SUBJECT_COLORS[hash % SUBJECT_COLORS.length])?.className ?? "subject-sage";
+}
+export function startOfWeek(d: Date) {
+  const c = new Date(d); c.setHours(0, 0, 0, 0); c.setDate(c.getDate() - ((c.getDay() + 6) % 7)); return c;
+}
+export function toggleTask(task: Task, now = Date.now()): Task {
+  return { ...task, completed: !task.completed, completedAt: task.completed ? undefined : now };
+}
+export function dashboardData(tasks: Task[], date = new Date()) {
+  const today = toISO(date), start = toISO(startOfWeek(date)), end = toISO(addDays(startOfWeek(date), 6));
+  const pending = tasks.filter(t => !t.completed);
+  const rank: Record<Priority, number> = { High: 0, Medium: 1, Low: 2 };
+  const priorities = [...pending].sort((a,b) => rank[a.priority] - rank[b.priority] || a.dueDate.localeCompare(b.dueDate)).slice(0,3);
+  const overdue = pending.filter(t => t.dueDate < today).sort((a,b) => a.dueDate.localeCompare(b.dueDate));
+  const upcoming = pending.filter(t => t.dueDate >= today && t.dueDate <= toISO(addDays(date, 7))).sort((a,b) => a.dueDate.localeCompare(b.dueDate));
+  const completedThisWeek = tasks.filter(t => t.completed && t.completedAt !== undefined && toISO(new Date(t.completedAt)) >= start && toISO(new Date(t.completedAt)) <= end);
+  const weeklyTasks = tasks.filter(t => (t.dueDate >= start && t.dueDate <= end) || completedThisWeek.some(c => c.id === t.id));
+  return { priorities, overdue, upcoming, completedThisWeek: completedThisWeek.length, weeklyTotal: weeklyTasks.length, weeklyPercent: weeklyTasks.length ? Math.round(completedThisWeek.length / weeklyTasks.length * 100) : 0 };
+}
+export const timeMinutes = (time: string) => Number(time.slice(0,2)) * 60 + Number(time.slice(3,5));
+export function sessionConflicts(candidate: Pick<Session, "date" | "start" | "end"> & { id?: string }, sessions: Session[]) {
+  return sessions.filter(s => s.id !== candidate.id && s.date === candidate.date && timeMinutes(candidate.start) < timeMinutes(s.end) && timeMinutes(candidate.end) > timeMinutes(s.start));
+}
+export function sessionLayout(sessions: Session[]) {
+  const result: Record<string, { lane: number; lanes: number }> = {};
+  const sorted = [...sessions].sort((a,b) => a.start.localeCompare(b.start));
+  let group: Session[] = [], groupEnd = 0;
+  const placeGroup = () => {
+    const ends: number[] = [];
+    for (const session of group) {
+      let lane = ends.findIndex(end => end <= timeMinutes(session.start));
+      if (lane < 0) lane = ends.length;
+      ends[lane] = timeMinutes(session.end);
+      result[session.id] = { lane, lanes: 0 };
+    }
+    for (const session of group) { const item = result[session.id]; if (item) item.lanes = ends.length; }
+  };
+  for (const session of sorted) {
+    if (group.length && timeMinutes(session.start) >= groupEnd) { placeGroup(); group = []; groupEnd = 0; }
+    group.push(session); groupEnd = Math.max(groupEnd, timeMinutes(session.end));
+  }
+  placeGroup(); return result;
+}
+export function resetStudyNest() {
+  for (const key of ["studynest.tasks", "studynest.sessions"]) localStorage.setItem(key, "[]");
+  localStorage.setItem("studynest.preferences", JSON.stringify(defaultPreferences()));
+  for (const key of ["studynest.tasks", "studynest.sessions", "studynest.preferences"]) window.dispatchEvent(new CustomEvent(EVT, { detail: key }));
+}
