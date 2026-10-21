@@ -1,8 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { Pencil, Plus, Trash2, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import { PageHeader } from "@/components/AppShell";
-import { formatDue, priorityClass, toISO, uid, useTasks, type Priority, type Task } from "@/lib/store";
+import { formatDue, priorityClass, toISO, uid, useTasks, usePreferences, subjectClass, toggleTask, type Priority, type Task } from "@/lib/store";
 
 export const Route = createFileRoute("/tasks")({
   head: () => ({
@@ -11,6 +13,7 @@ export const Route = createFileRoute("/tasks")({
       { name: "description", content: "Add, edit, filter and complete your assignments by subject, due date and priority." },
       { property: "og:title", content: "My Tasks — StudyNest" },
       { property: "og:description", content: "Manage assignments and deadlines in StudyNest." },
+      { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: TasksPage,
@@ -22,6 +25,7 @@ const prRank: Record<Priority, number> = { High: 0, Medium: 1, Low: 2 };
 
 function TasksPage() {
   const [tasks, setTasks] = useTasks();
+  const [preferences] = usePreferences();
   const [editing, setEditing] = useState<string | "new" | null>(null);
   const [draft, setDraft] = useState<Draft>({ title: "", subject: "", dueDate: "", priority: "Medium" });
   const [status, setStatus] = useState<"all" | "pending" | "completed">("all");
@@ -53,6 +57,7 @@ function TasksPage() {
     if (!d.title || !d.subject || !d.dueDate) return;
     if (editing === "new") setTasks((p) => [...p, { ...d, id: uid(), completed: false, createdAt: Date.now() }]);
     else setTasks((p) => p.map((t) => (t.id === editing ? { ...t, ...d } : t)));
+    toast.success(editing === "new" ? "Task created" : "Task updated");
     setEditing(null);
   };
   const today = toISO(new Date());
@@ -60,13 +65,13 @@ function TasksPage() {
   return (
     <>
       <PageHeader title="My Tasks" subtitle={tasks ? `${tasks.filter((t) => !t.completed).length} pending · ${tasks.filter((t) => t.completed).length} completed` : ""}
-        action={<button onClick={openNew} className="btn bg-primary text-primary-foreground hover:opacity-90"><Plus className="h-4 w-4" /> New task</button>} />
+        action={<Button onClick={openNew} className="btn bg-primary text-primary-foreground hover:opacity-90"><Plus className="h-4 w-4" /> New task</Button>} />
 
       {editing && (
         <form onSubmit={save} className="card-soft p-5 mb-6 grid gap-3 md:grid-cols-12 items-end">
           <div className="md:col-span-12 flex justify-between items-center">
             <h2 className="font-semibold">{editing === "new" ? "Add a task" : "Edit task"}</h2>
-            <button type="button" aria-label="Close" onClick={() => setEditing(null)} className="text-muted-foreground hover:text-primary"><X className="h-4 w-4" /></button>
+            <Button type="button" aria-label="Close" onClick={() => setEditing(null)} className="text-muted-foreground hover:text-primary"><X className="h-4 w-4" /></Button>
           </div>
           <label className="md:col-span-4 text-sm">Title<input required autoFocus className="field mt-1" value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })} placeholder="e.g. Chapter 3 summary" /></label>
           <label className="md:col-span-3 text-sm">Subject<input required list="subjects" className="field mt-1" value={draft.subject} onChange={(e) => setDraft({ ...draft, subject: e.target.value })} placeholder="e.g. History" /></label>
@@ -75,12 +80,12 @@ function TasksPage() {
           <label className="md:col-span-2 text-sm">Priority
             <select className="field mt-1" value={draft.priority} onChange={(e) => setDraft({ ...draft, priority: e.target.value as Priority })}>{PR.map((p) => <option key={p}>{p}</option>)}</select>
           </label>
-          <button className="btn md:col-span-1 bg-primary text-primary-foreground">Save</button>
+          <Button className="btn md:col-span-1 bg-primary text-primary-foreground">Save</Button>
         </form>
       )}
 
-      <div className="card-soft p-4 mb-4 grid grid-cols-2 md:grid-cols-5 gap-3">
-        <input className="field col-span-2 md:col-span-1" placeholder="Search…" value={q} onChange={(e) => setQ(e.target.value)} />
+      <div className="border-y py-4 mb-4 grid grid-cols-2 md:grid-cols-5 gap-3">
+        <input className="field col-span-2 md:col-span-1" aria-label="Search tasks" placeholder="Search tasks or subjects…" value={q} onChange={(e) => setQ(e.target.value)} />
         <select className="field" value={status} onChange={(e) => setStatus(e.target.value as typeof status)} aria-label="Status">
           <option value="all">All statuses</option><option value="pending">Pending</option><option value="completed">Completed</option>
         </select>
@@ -95,22 +100,23 @@ function TasksPage() {
         </select>
       </div>
 
+      {!tasks && <p role="status">Loading tasks…</p>}
       <ul className="space-y-2.5">
         {tasks && list.length === 0 && <li className="card-soft p-8 text-center text-muted-foreground">No tasks match your filters.</li>}
         {list.map((t) => (
           <li key={t.id} className={`card-soft p-4 flex items-center gap-3 ${t.completed ? "opacity-60" : ""}`}>
-            <input type="checkbox" checked={t.completed} aria-label="Toggle complete" className="h-5 w-5 accent-primary shrink-0"
-              onChange={() => setTasks((p) => p.map((x) => (x.id === t.id ? { ...x, completed: !x.completed } : x)))} />
+            <input type="checkbox" checked={t.completed} aria-label={`Complete ${t.title}`} className="h-5 w-5 accent-primary shrink-0"
+              onChange={() => { setTasks((p) => p.map((x) => (x.id === t.id ? toggleTask(x) : x))); toast.success(t.completed ? "Task marked pending" : "Task completed"); }} />
             <div className="flex-1 min-w-0">
               <div className={`font-medium ${t.completed ? "line-through" : ""}`}>{t.title}</div>
               <div className="text-xs text-muted-foreground flex flex-wrap gap-x-3">
-                <span>{t.subject}</span>
-                <span className={!t.completed && t.dueDate < today ? "text-high font-semibold" : ""}>Due {formatDue(t.dueDate)}{!t.completed && t.dueDate < today ? " · overdue" : ""}</span>
+                <span className={`px-2 py-0.5 rounded-md ${subjectClass(t.subject, preferences)}`}>{t.subject}</span>
+                <span className={!t.completed && preferences?.deadlineWarnings && t.dueDate < today ? "text-high font-semibold" : ""}>Due {formatDue(t.dueDate)}{!t.completed && preferences?.deadlineWarnings && t.dueDate < today ? " · overdue" : ""}</span>
               </div>
             </div>
             <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${priorityClass[t.priority]}`}>{t.priority}</span>
-            <button aria-label="Edit" onClick={() => openEdit(t)} className="p-2 rounded-lg text-muted-foreground hover:bg-muted hover:text-primary"><Pencil className="h-4 w-4" /></button>
-            <button aria-label="Delete" onClick={() => confirm(`Delete "${t.title}"?`) && setTasks((p) => p.filter((x) => x.id !== t.id))} className="p-2 rounded-lg text-muted-foreground hover:bg-high-soft hover:text-high"><Trash2 className="h-4 w-4" /></button>
+            <Button variant="ghost" size="icon" title="Edit task" aria-label={`Edit ${t.title}`} onClick={() => openEdit(t)} className="p-2 rounded-lg text-muted-foreground hover:bg-muted hover:text-primary"><Pencil className="h-4 w-4" /></Button>
+            <Button variant="ghost" size="icon" title="Delete task" aria-label={`Delete ${t.title}`} onClick={() => { if (!confirm(`Delete "${t.title}"?`)) return; setTasks(p => p.filter(x => x.id !== t.id)); toast.success("Task deleted"); }} className="p-2 rounded-lg text-muted-foreground hover:bg-high-soft hover:text-high"><Trash2 className="h-4 w-4" /></Button>
           </li>
         ))}
       </ul>

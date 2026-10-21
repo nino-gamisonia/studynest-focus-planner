@@ -1,110 +1,69 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { CalendarClock, CheckCircle2, Clock, ListTodo, ArrowRight } from "lucide-react";
+import { CalendarClock, CheckCircle2, Clock, ListTodo, ArrowRight, Target, AlertTriangle } from "lucide-react";
 import { PageHeader } from "@/components/AppShell";
-import { formatDue, priorityClass, subjectTone, toISO, useSessions, useTasks } from "@/lib/store";
+import { TaskList } from "@/components/TaskList";
+import { Button } from "@/components/ui/button";
+import { dashboardData, subjectClass, toISO, usePreferences, useSessions, useTasks, timeMinutes, startOfWeek, addDays } from "@/lib/store";
 
 export const Route = createFileRoute("/")({
-  head: () => ({
-    meta: [
-      { title: "Dashboard — StudyNest" },
-      { name: "description", content: "Your StudyNest overview: upcoming deadlines, tasks, and today's study plan." },
-      { property: "og:title", content: "StudyNest — Study smart. Stay on track." },
-      { property: "og:description", content: "Organize assignments, deadlines, and study schedules." },
-    ],
-  }),
-  component: Dashboard,
+  head: () => ({ meta: [
+    { title: "Dashboard — StudyNest" },
+    { name: "description", content: "Your StudyNest overview: priorities, weekly progress, upcoming deadlines and today's study plan." },
+    { property: "og:title", content: "Dashboard — StudyNest" },
+    { property: "og:description", content: "Stay on track with assignments and study goals." },
+    { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" },
+  ] }), component: Dashboard,
 });
 
 function Dashboard() {
-  const [tasks, setTasks] = useTasks();
+  const [tasks] = useTasks();
   const [sessions] = useSessions();
-  const today = toISO(new Date());
-  const all = tasks ?? [];
-  const pending = all.filter((t) => !t.completed);
-  const done = all.filter((t) => t.completed);
-  const upcoming = [...pending].sort((a, b) => a.dueDate.localeCompare(b.dueDate)).slice(0, 5);
-  const todays = (sessions ?? []).filter((s) => s.date === today).sort((a, b) => a.start.localeCompare(b.start));
-  const overdue = pending.filter((t) => t.dueDate < today).length;
-  const pct = all.length ? Math.round((done.length / all.length) * 100) : 0;
+  const [preferences] = usePreferences();
+  const today = toISO(new Date()), all = tasks ?? [];
+  const data = dashboardData(all);
+  const todays = (sessions ?? []).filter(s => s.date === today).sort((a,b) => a.start.localeCompare(b.start));
+  const week = startOfWeek(new Date());
+  const studyHours = (sessions ?? []).filter(s => s.date >= toISO(week) && s.date <= toISO(addDays(week,6))).reduce((n,s) => n + (timeMinutes(s.end) - timeMinutes(s.start))/60,0);
   const hour = new Date().getHours();
   const greet = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
-
   const stats = [
-    { label: "Pending tasks", value: pending.length, icon: ListTodo, tone: "bg-sky" },
-    { label: "Completed", value: done.length, icon: CheckCircle2, tone: "bg-accent" },
-    { label: "Due this week", value: pending.filter((t) => t.dueDate >= today && t.dueDate <= toISO(new Date(Date.now() + 6 * 864e5))).length, icon: CalendarClock, tone: "bg-medium-soft" },
+    { label: "Pending tasks", value: all.filter(t => !t.completed).length, icon: ListTodo, tone: "bg-sky" },
+    { label: "Completed", value: all.filter(t => t.completed).length, icon: CheckCircle2, tone: "bg-accent" },
+    { label: "Due this week", value: all.filter(t => !t.completed && t.dueDate >= toISO(week) && t.dueDate <= toISO(addDays(week,6))).length, icon: CalendarClock, tone: "bg-medium-soft" },
     { label: "Sessions today", value: todays.length, icon: Clock, tone: "bg-low-soft" },
   ];
-
-  return (
-    <>
-      <PageHeader title={`${greet} 👋`} subtitle={new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })} />
-
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        {stats.map(({ label, value, icon: Icon, tone }) => (
-          <div key={label} className="card-soft p-5">
-            <div className={`h-9 w-9 rounded-lg grid place-items-center ${tone} text-primary mb-3`}><Icon className="h-4 w-4" /></div>
-            <div className="text-3xl font-semibold text-primary">{tasks ? value : "–"}</div>
-            <div className="text-sm text-muted-foreground">{label}</div>
-          </div>
-        ))}
-      </div>
-
-      <div className="grid lg:grid-cols-5 gap-6">
-        <section className="card-soft p-6 lg:col-span-3">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold text-lg">Upcoming deadlines</h2>
-            <Link to="/tasks" className="text-sm text-muted-foreground hover:text-primary inline-flex items-center gap-1">All tasks <ArrowRight className="h-3.5 w-3.5" /></Link>
-          </div>
-          {overdue > 0 && <p className="text-sm text-high bg-high-soft rounded-lg px-3 py-2 mb-3">{overdue} task{overdue > 1 ? "s are" : " is"} overdue.</p>}
-          {!tasks ? null : upcoming.length === 0 ? (
-            <p className="text-muted-foreground text-sm py-6 text-center">Nothing pending — enjoy the calm.</p>
-          ) : (
-            <ul className="divide-y">
-              {upcoming.map((t) => (
-                <li key={t.id} className="flex items-center gap-3 py-3">
-                  <input type="checkbox" aria-label={`Complete ${t.title}`} className="h-4 w-4 accent-primary"
-                    onChange={() => setTasks((p) => p.map((x) => (x.id === t.id ? { ...x, completed: true } : x)))} />
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium truncate">{t.title}</div>
-                    <div className="text-xs text-muted-foreground">{t.subject}</div>
-                  </div>
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${priorityClass[t.priority]}`}>{t.priority}</span>
-                  <span className={`text-xs w-16 text-right ${t.dueDate < today ? "text-high font-semibold" : "text-muted-foreground"}`}>{formatDue(t.dueDate)}</span>
-                </li>
-              ))}
-            </ul>
-          )}
+  if (!tasks || !sessions || !preferences) return <p role="status" className="text-muted-foreground">Loading your study overview…</p>;
+  return <>
+    <PageHeader title={`${greet}, ${preferences.displayName} 👋`} subtitle={new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })} />
+    <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-7">{stats.map(({label,value,icon:Icon,tone}) => <div key={label} className="card-soft p-4 sm:p-5">
+      <div className={`h-9 w-9 rounded-lg grid place-items-center ${tone} text-primary mb-3`}><Icon className="h-4 w-4" /></div>
+      <div className="text-3xl font-semibold text-primary">{value}</div><div className="text-sm text-muted-foreground">{label}</div>
+    </div>)}</div>
+    <div className="grid xl:grid-cols-5 gap-8">
+      <div className="xl:col-span-3 min-w-0">
+        <section className="pb-6"><div className="flex items-center justify-between gap-3 mb-2"><h2 className="font-semibold text-lg flex items-center gap-2"><Target className="w-5 h-5 text-primary" />Today's Priorities</h2><Link to="/tasks" className="text-sm text-muted-foreground inline-flex items-center gap-1">All tasks <ArrowRight className="w-4 h-4" /></Link></div>
+          <TaskList tasks={data.priorities} empty="You're all caught up. No incomplete tasks." />
         </section>
-
-        <div className="lg:col-span-2 flex flex-col gap-6">
-          <section className="card-soft p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-semibold text-lg">Today's study plan</h2>
-              <Link to="/planner" className="text-sm text-muted-foreground hover:text-primary">Planner</Link>
-            </div>
-            {!sessions ? null : todays.length === 0 ? (
-              <p className="text-muted-foreground text-sm">No sessions planned today. <Link to="/planner" className="text-primary underline">Add one</Link></p>
-            ) : (
-              <ul className="space-y-2.5">
-                {todays.map((s) => (
-                  <li key={s.id} className={`rounded-xl p-3 ${subjectTone(s.subject)}`}>
-                    <div className="text-xs font-semibold opacity-70">{s.start} – {s.end}</div>
-                    <div className="font-medium">{s.subject}</div>
-                    {s.notes && <div className="text-xs opacity-75">{s.notes}</div>}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-          <section className="card-soft p-6 bg-primary text-primary-foreground">
-            <div className="text-sm opacity-80">Overall progress</div>
-            <div className="text-4xl font-display font-semibold my-1">{pct}%</div>
-            <div className="h-2 rounded-full bg-primary-foreground/15 overflow-hidden"><div className="h-full bg-sage transition-all" style={{ width: `${pct}%` }} /></div>
-            <Link to="/timer" className="btn mt-5 bg-sage text-primary hover:opacity-90 w-full">Start a focus session</Link>
-          </section>
-        </div>
+        <section className="border-t py-6"><h2 className="font-semibold text-lg mb-2">Upcoming Deadlines</h2><p className="text-xs text-muted-foreground mb-2">Next 7 days</p><TaskList tasks={data.upcoming} empty="No deadlines in the next seven days." /></section>
+        <section className="border-t py-6"><h2 className="font-semibold text-lg mb-2 flex items-center gap-2"><AlertTriangle className="h-4 w-4 text-high" />Overdue Tasks</h2>
+          {preferences.deadlineWarnings && data.overdue.length > 0 && <p className="text-sm text-high bg-high-soft rounded-md px-3 py-2 mb-2">{data.overdue.length} missed deadline{data.overdue.length === 1 ? "" : "s"}</p>}
+          <TaskList tasks={data.overdue} empty="No overdue tasks. You're on track." />
+        </section>
       </div>
-    </>
-  );
+      <div className="xl:col-span-2 min-w-0">
+        <section className="pb-6"><div className="flex items-center justify-between mb-4"><h2 className="font-semibold text-lg">Today's study plan</h2><Link to="/planner" className="text-sm text-primary">Planner</Link></div>
+          {todays.length === 0 ? <p className="text-sm text-muted-foreground">No sessions today. <Link to="/planner" className="underline text-primary">Plan a session</Link></p> : <ul className="space-y-3">{todays.map(s => <li key={s.id} className={`rounded-lg p-3 ${subjectClass(s.subject, preferences)}`}><div className="text-xs font-semibold">{s.start} – {s.end}</div><div className="font-medium break-words">{s.subject}</div>{s.notes && <div className="text-xs mt-1 break-words">{s.notes}</div>}</li>)}</ul>}
+        </section>
+        <section className="py-6 border-t"><h2 className="font-semibold text-lg">Weekly Progress</h2><div className="text-4xl font-display text-primary my-3">{data.weeklyPercent}%</div>
+          <progress className="w-full h-2 accent-primary" aria-label="Weekly task progress" value={data.weeklyPercent} max={100} />
+          <p className="text-sm text-muted-foreground mt-2">{data.completedThisWeek} completed · {data.weeklyTotal} tasks this week</p>
+          <p className="text-xs text-muted-foreground mt-2">Tasks due this week or completed this week. Earlier completions without a date count toward lifetime totals only.</p>
+        </section>
+        <section className="border-t py-6"><h2 className="font-semibold text-lg mb-4">Your weekly goals</h2><div className="flex justify-between text-sm mb-2"><span>Tasks completed</span><span>{data.completedThisWeek} / {preferences.weeklyTaskGoal}</span></div><progress className="w-full h-2 accent-primary" aria-label="Task goal" value={Math.min(data.completedThisWeek, preferences.weeklyTaskGoal)} max={preferences.weeklyTaskGoal} />
+          <div className="flex justify-between text-sm mt-4 mb-2"><span>Study hours planned</span><span>{studyHours.toFixed(1)} / {preferences.weeklyStudyGoal}</span></div><progress className="w-full h-2 accent-primary" aria-label="Study hours goal" value={Math.min(studyHours, preferences.weeklyStudyGoal)} max={preferences.weeklyStudyGoal} />
+          <Button asChild className="w-full mt-6"><Link to="/timer">Start a focus session</Link></Button>
+        </section>
+      </div>
+    </div>
+  </>;
 }
